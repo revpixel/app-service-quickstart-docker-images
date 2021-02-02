@@ -1,0 +1,50 @@
+on: [push]
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@master
+    
+    - uses: azure/docker-login@v1
+      with:
+        login-server: acloudsteve.azurecr.io
+        username: ${{ secrets.acr_acloudsteve_username }}
+        password: ${{ secrets.acr_acloudsteve_password }}
+    
+    - name: Build and push image to ACR
+      id: build-image
+      run: |
+        docker build "$GITHUB_WORKSPACE/alpine-php-mysql/0.1" -f  "alpine-php-mysql/0.1/Dockerfile" -t acloudsteve.azurecr.io/democatdogvote:${{ github.sha }}
+        docker push acloudsteve.azurecr.io/democatdogvote:${{ github.sha }}
+    
+    - uses: azure/k8s-set-context@v1
+      with:
+         kubeconfig: ${{ secrets.aks_democatdogvote_kubeConfig }}
+      id: login
+    
+    - name: Create namespace
+      run: |
+        namespacePresent=`kubectl get namespace | grep democatdogvoteb8be | wc -l`
+        if [ $namespacePresent -eq 0 ]
+        then
+            echo `kubectl create namespace democatdogvoteb8be`
+        fi
+
+    - uses: azure/k8s-create-secret@v1
+      with:
+        namespace: democatdogvoteb8be
+        container-registry-url: acloudsteve.azurecr.io
+        container-registry-username: ${{ secrets.acr_acloudsteve_username }}
+        container-registry-password: ${{ secrets.acr_acloudsteve_password }}
+        secret-name: democatdogvodockerauth
+       
+    - uses: azure/k8s-deploy@v1.2
+      with:
+        namespace: democatdogvoteb8be
+        manifests: |
+          manifests/deployment.yml
+          manifests/service.yml
+        images: |
+          acloudsteve.azurecr.io/democatdogvote:${{ github.sha }}
+        imagepullsecrets: |
+          democatdogvodockerauth
