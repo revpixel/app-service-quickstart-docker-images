@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: Service
+metadata:
+    name: "democatdogvote-2154"
+    labels:
+        app: "democatdogvote-2154"
+spec:
+    type: LoadBalancer
+    ports:
+    - port: 2222
+      targetPort: 2222
+      protocol: TCP
+      name: http
+    selector:
+        app: "democatdogvote-2154"
