@@ -1,0 +1,19 @@
+apiVersion : apps/v1
+kind: Deployment
+metadata:
+  name: "democatdogvote-2154"
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: "democatdogvote-2154"
+  template:
+    metadata:
+      labels:
+        app: "democatdogvote-2154"
+    spec:
+      containers:
+        - name: "democatdogvote-2154"
+          image: "acloudsteve.azurecr.io/democatdogvote"
+          ports:
+          - containerPort: 2222
