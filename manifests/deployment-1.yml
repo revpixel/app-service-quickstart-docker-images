@@ -1,0 +1,19 @@
+apiVersion : apps/v1
+kind: Deployment
+metadata:
+  name: "az303aks-0b2b"
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: "az303aks-0b2b"
+  template:
+    metadata:
+      labels:
+        app: "az303aks-0b2b"
+    spec:
+      containers:
+        - name: "az303aks-0b2b"
+          image: "acloudsteve.azurecr.io/az303aks"
+          ports:
+          - containerPort: 2222
