@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: Service
+metadata:
+    name: "az303aks-0b2b"
+    labels:
+        app: "az303aks-0b2b"
+spec:
+    type: LoadBalancer
+    ports:
+    - port: 2222
+      targetPort: 2222
+      protocol: TCP
+      name: http
+    selector:
+        app: "az303aks-0b2b"
