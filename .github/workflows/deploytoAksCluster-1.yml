@@ -1,0 +1,50 @@
+on: [push]
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@master
+    
+    - uses: azure/docker-login@v1
+      with:
+        login-server: acloudsteve.azurecr.io
+        username: ${{ secrets.acr_acloudsteve_username }}
+        password: ${{ secrets.acr_acloudsteve_password }}
+    
+    - name: Build and push image to ACR
+      id: build-image
+      run: |
+        docker build "$GITHUB_WORKSPACE/alpine-php-mysql/0.1" -f  "alpine-php-mysql/0.1/Dockerfile" -t acloudsteve.azurecr.io/az303aks:${{ github.sha }} --label dockerfile-path=alpine-php-mysql/0.1/Dockerfile
+        docker push acloudsteve.azurecr.io/az303aks:${{ github.sha }}
+    
+    - uses: azure/k8s-set-context@v1
+      with:
+         kubeconfig: ${{ secrets.aks_az303aks_kubeConfig }}
+      id: login
+    
+    - name: Create namespace
+      run: |
+        namespacePresent=`kubectl get namespace | grep az303aks8397 | wc -l`
+        if [ $namespacePresent -eq 0 ]
+        then
+            echo `kubectl create namespace az303aks8397`
+        fi
+
+    - uses: azure/k8s-create-secret@v1
+      with:
+        namespace: az303aks8397
+        container-registry-url: acloudsteve.azurecr.io
+        container-registry-username: ${{ secrets.acr_acloudsteve_username }}
+        container-registry-password: ${{ secrets.acr_acloudsteve_password }}
+        secret-name: az303aksdockerauth
+       
+    - uses: azure/k8s-deploy@v1.2
+      with:
+        namespace: az303aks8397
+        manifests: |
+          manifests/deployment-1.yml
+          manifests/service-1.yml
+        images: |
+          acloudsteve.azurecr.io/az303aks:${{ github.sha }}
+        imagepullsecrets: |
+          az303aksdockerauth
